@@ -69,6 +69,7 @@ footer {
   .main {
     margin-left: 170px; /* Same as the width of the sidebar + 10 */
     margin-right: 32px;
+    margin-bottom: 60px;
     padding: 0px 0px;
   }
   .content {
