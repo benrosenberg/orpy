@@ -28,6 +28,13 @@ h1.logo span.py {
     -webkit-text-fill-color: transparent;
 }
 
+.class-description {
+    background-color: #cecece;
+    border: 2px solid black;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
 footer {
     width: 100%;
     padding-top: 10px;
