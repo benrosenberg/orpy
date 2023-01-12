@@ -27,6 +27,48 @@
 <div class="content">
 <h1>OR-Tools</h1>
 
+<p>
+  According to Google (its developer),
+  <blockquote style="margin-right: 20%;">
+    OR-Tools is an open source software suite for optimization, tuned for tackling the world's toughest problems in vehicle routing, flows, integer and linear programming, and constraint programming.
+  </blockquote>
+</p>
+
+<p>
+  For our purposes in ORIE, OR-Tools is a module in Python that we can use to interface with Gurobi (and maybe other ILP solvers). Like GurobiPy, it allows users to pass constraints to solver(s) in a specific format, but unlike GurobiPy, the reason for this is that the solver itself can be abstracted away from the user's code in favor of adaptability (while GurobiPy only works with Gurobi). 
+</p>
+
+<p>
+  There aren't too many benefits or drawbacks necessarily from using OR-Tools over GurobiPy (or vice-versa), outside of maybe the fact that with GurobiPy you can interface more directly with the solver, using commands that directly tell Gurobi how much output to show, etcetera. But OR-Tools' more intuitive (according to some) syntax might make up for this.
+</p>
+
+<h2>Installation</h2>
+
+<p>
+  You can install OR-Tools with the following command in your terminal: 
+  <code>python -m pip install ortools</code>.
+</p>
+
+<p>
+  If you don't have <code>pip</code> installed, read instructions on installing it here: <a href="https://pip.pypa.io/en/stable/installation/">pip website</a>.
+</p>
+
+<p>
+  If you don't have Python installed, download it <a href="https://www.python.org/downloads/">here</a> (Python website), or use <a href="https://orpy.wiki/tools/anaconda.html">Anaconda</a> instead.
+</p>
+
+<h2>Usage</h2>
+
+<p>
+  Documentation on OR-Tools' Python interface can be found here: <a href="https://developers.google.com/optimization/introduction/python">https://developers.google.com/optimization/introduction/python</a>.
+</p>
+
+<h3>Examples</h3>
+
+<p>
+  Examples of OR-Tools can be found on this wiki page, under "ILP Formulation Examples": <a href="https://orpy.wiki/concepts/index.html">https://orpy.wiki/concepts/index.html</a>.
+</p>
+
     
 </div>
 <footer><a href="https://github.com/oriepython/orpy/blob/main/tools/ortools.html">Edit this page on GitHub</a></footer>
