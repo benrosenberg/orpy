@@ -12,3 +12,22 @@ Everything you need to know about Python for ORIE at Cornell, including `pandas`
  - [ ] Concepts: do all examples
  - [ ] Tools: finish tool pages (anaconda, colab, jupyter); write up general advice for events/ilps
 
+## Editing this wiki
+
+This wiki is written in pure HTML/CSS. That makes it harder to edit, but makes it infinitely more customizable and limits annoying complications with external packages (which would probably work with Markdown instead).
+
+Code supplied to this wiki should be formatted using pygments. There is already css in the `style.css` file which corresponds to the default pygments theme, so all you need to do before pasting the code directly onto a page is run the following command (in a directory on your own system, and not in the repo itself!):
+
+```
+pygmentize -f html /path/to/file.py
+```
+
+This will print a HTML-highlighted version of `file.py` out in your terminal. If you'd prefer not to copy and paste from there you may want to instead run:
+
+```
+pygmentize -f html /path/to/file.py > out.html
+```
+
+This will create a new file `out.html` in the current directory which contains the HTML-highlighted output, which you can then copy and paste from. **Be careful** that you don't already have a file named `out.html` in your current directory, as this command will wipe it!
+
+
