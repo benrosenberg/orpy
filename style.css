@@ -52,6 +52,32 @@ h1.logo span.py {
   padding-right: 15px;
 }
 
+td,
+th {
+    border: 1px solid rgb(190, 190, 190);
+    padding: 10px;
+    vertical-align: top;
+}
+
+tr:nth-child(even) {
+    background-color: #eee;
+}
+
+th[scope='col'] {
+    background-color: #696969;
+    color: #fff;
+}
+
+caption {
+    padding: 10px;
+    caption-side: bottom;
+}
+
+table {
+    border-collapse: collapse;
+    border: 2px solid #818181;
+}
+
 footer {
   width: 100%;
   padding-top: 10px;

@@ -27,6 +27,67 @@
 <div class="content">
 <h1>Anaconda</h1>
 
+<p>
+  According to their website, Anaconda is "the easiest way to perform Python/R data science and machine learning on a single machine." But that isn't really always the case. Most of the time, you can just stick everything on your machine into one environment (the default one, which you can just install Python directly on), and be fine. 
+</p>
+
+<p>
+  Here are some of the pros and cons of using Anaconda, rather than just vanilla Python:
+  <table>
+    <caption>Pros and Cons of Anaconda</caption>
+    <tr>
+        <th scope="col">Pros</th>
+        <th scope="col">Cons</th>
+    </tr>
+    <tr>
+        <td>
+          <ul>
+            <li>Allows you to have multiple different environments that you can switch between</li>
+            <li>Comes with a lot of packages already installed</li>
+          </ul>
+        </td>
+        <td>
+          <ul>
+            <li>Large installation package (uses up a lot of space); you won't ever use more than a few of the packages installed with it</li>
+            <li>Anaconda Navigator is extremely slow</li>
+            <li>
+              Causes confusion over which way to install packages (<code>pip</code> vs <code>conda</code>)
+            </li>
+            <li>Causes confusion over which way to open Python (Anaconda prompt vs Anaconda Navigator &gt; Anaconda prompt vs Command Prompt/Terminal)</li>
+            <li>Causes confusion over which way to open Jupyter Notebook (same as issue as with opening Python, except also includes possibility of opening from Start Menu)</li>
+            <li>Makes it hard to locate files in filesystem</li>
+            <li>More environments means that you need to update the same packages multiple times</li>
+          </ul>
+        </td>
+    </tr>
+</table>
+</p>
+
+<p>
+  As you can see, the advantage of having different environments for everything comes at a massive cost. This <a href="https://xkcd.com">xkcd</a> comic describes it well:
+</p> 
+
+<p>
+  <a href="https://xkcd.com/1987/">
+    <img src="https://imgs.xkcd.com/comics/python_environment.png" style="margin: 20px;">
+  </a>
+</p>
+
+<h2>Installation</h2>
+
+<p>
+  If you really have to, you can install Anaconda here: <a href="https://www.anaconda.com/">Anaconda website</a>.
+</p>
+
+<p>
+  If you can get away with it, it's probably better to install Miniconda (a smaller version of Anaconda that only includes <code>conda</code>, <code>Python</code>, and some other useful packages): <a href="https://docs.conda.io/en/latest/miniconda.html">Miniconda website</a>.
+</p>
+
+<h2>Usage</h2>
+
+<p>
+  There are a lot of different ways to use Anaconda. A surefire way to do most things is to just open Anaconda Navigator and stumble around the GUI (Graphic User Interface) there, but Navigator can take a long time to open. If possible try not to use Anaconda.
+</p>
     
 </div>
 <footer><a href="https://github.com/oriepython/orpy/blob/main/tools/anaconda.html">Edit this page on GitHub</a></footer>
