@@ -1,6 +1,7 @@
 body {
     font-family:Arial, Helvetica, sans-serif;
     font-size: 20px;
+    margin: 0;
   }
 
 h1.logo {
@@ -83,10 +84,31 @@ footer {
     padding: 0px 10px;
   }
   
-  /* On smaller screens, where height is less than 450px, change the style of the sidebar (less padding and a smaller font size) */
-  @media screen and (max-height: 450px) {
-    .sidenav {padding-top: 15px;}
-    .sidenav a {font-size: 18px;}
+  /* On smaller screens, where width is less than 500px, change the style of the sidebar */
+  @media screen and (max-width: 500px) {
+    .sidenav {
+      height: 20%; 
+      width: 100%; 
+      position: relative;
+      z-index: 1; 
+      top: 0; 
+      left: 0;
+      background-color: #111; 
+      overflow-x: hidden; 
+      padding-top: 0px;
+      padding-bottom: 10px;
+    }
+  
+    .sidenav li a {
+      text-align: center;
+      float: none;
+      border-right: 0px solid #eee;
+    }
+  
+    .main {
+      margin-left: 2%;
+      margin-right: 2%;
+    }
   }
 
   /* Pygments default syntax highlighting */
