@@ -59,6 +59,12 @@ th {
     vertical-align: top;
 }
 
+td[scope='row'] {
+    background-color: #696969;
+    color: #fff;
+    vertical-align: middle;
+}
+
 tr:nth-child(even) {
     background-color: #eee;
 }
