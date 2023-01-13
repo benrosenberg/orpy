@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ORIE Python Wiki</title>
+  <link rel="stylesheet" href="https://orpy.wiki/style.css" />
+  <link rel="icon" type="image/png" href="https://orpy.wiki/favicon.png">
+  <style></style>
+</head>
+
+<!-- Side navigation -->
+<div class="sidenav">
+    <h1 class="logo"><span class="logo">OR<br><span class="py">PY</span></h1>
+    <a href="https://orpy.wiki/index.html">Home</a>
+    <a href="https://orpy.wiki/about">About</a>
+    <hr>
+    <a href="https://orpy.wiki/courses/index.html">Courses</a>
+    <a href="https://orpy.wiki/concepts/index.html">Concepts</a>
+    <a href="https://orpy.wiki/tools/index.html">Tools</a>
+    <hr>
+    <a href="https://github.com/oriepython/orpy">GitHub</a>
+</div>
+
+<!-- Page content -->
+<div class="main">
+<div class="content">
+<h1>ORIE 4390</h1>
+
+Course description (from class roster):
+<div class="class-description">
+    <p>
+        Hands-on experience with integer linear programming and dynamic programming: creating ILPs and DPs, implementing them, critiquing them, understanding solver output, and improving ILPs using better variables, constraints, symmetry breaking, etc. Examples of problems that we will study in this course are logistical problems like sequencing in production, scheduling problems with conflicts (vertex coloring), matching problems for markets and clustering problems in networks, but are not limited to these domains. In addition, a variety of general linear programming techniques such as Fourier-Motzkin elimination, Dantzig-Wolfe decomposition, Benders decomposition and extended formulations may be covered, as well as rounding techniques of LP solutions.
+    </p>
+    
+    <p>
+        <b>Offered:</b> Fall or Spring.
+    </p>
+
+    <p>
+        <b>Prerequisites:</b> <a href="ORIE_3300.html">ORIE 3300</a> and <a href="ORIE_3310.html">ORIE 3310</a>, or permission of instructor.
+    </p>
+
+    <p>
+        <b>Outcomes:</b>
+        <ul>
+            <li>Demonstrate ability to formulate strong ILPs.</li>
+            <li>Recognize, identify and improve problematic formulations.</li>
+            <li>Understand information from solver, and use this to improve formulations.</li>
+            <li>Ability to use Dynamic Programming in a variety of settings.</li>
+        </ul>
+    </p>
+</div>
+
+<h2>Is Python used?</h2>
+
+Yes, although there is an option to use <a href="https://ampl.com">AMPL</a> instead.
+
+<h2>If Python is used, where is it used?</h2>
+
+Python is used in homeworks, although students have the option to use AMPL instead. (Most students will probably want to use Python.)
+
+<h2>What is Python used for?</h2>
+
+Python is used as a frontend to an ILP solving package (Gurobi). It's recommended to either use <a href="https://orpy.wiki/tools/gurobipy.html">GurobiPy</a> or <a href="https://orpy.wiki/tools/ortools.html">OR-Tools</a>, and slightly preferred to use GurobiPy as it allows you to interface more directly with Gurobi (which is the only ILP solver used in the course).
+
+<h2>What do I need to know?</h2>
+
+You should have a minimal understanding of Python; specifically, you should be set if you've used GurobiPy or OR-Tools (or even <a href="https://orpy.wiki/tools/cvxpy.html">CVXPY</a>) before. 
+
+<h3>Relevant pages</h3>
+
+<ul>
+    <li><a href="https://orpy.wiki/tools/gurobipy.html">GurobiPy</a></li>
+    <li><a href="https://orpy.wiki/tools/ortools.html">OR-Tools</a></li>
+</ul>
+
+</div>
+<footer><a href="https://github.com/oriepython/orpy/blob/main/courses/ORIE_4390.html">Edit this page on GitHub</a></footer>
+</div>
