@@ -7,6 +7,25 @@
   <link rel="stylesheet" href="https://orpy.wiki/style.css" />
   <link rel="icon" type="image/png" href="https://orpy.wiki/favicon.png">
   <style></style>
+
+  <!-- KaTeX JS and CSS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+   var mathElements = document.getElementsByClassName("math");
+   var macros = [];
+   for (var i = 0; i < mathElements.length; i++) {
+    var texText = mathElements[i].firstChild;
+    if (mathElements[i].tagName == "SPAN") {
+     katex.render(texText.data, mathElements[i], {
+      displayMode: mathElements[i].classList.contains('display'),
+      throwOnError: false,
+      macros: macros,
+      fleqn: false
+     });
+  }}});
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" />
+
 </head>
 
 <!-- Side navigation -->
@@ -27,8 +46,128 @@
 <div class="content">
 <h1>Min Cost Flow ILP Formulation</h1>
 
+<!-- Converted IPYNB file -->
+<div class="wrapped-ipynb"><div class="wrapped-markdown">
+  <h1>Min Cost Flow ILP</h1>
+  <h3>Author: <a href="https://www.youtube.com/@benjaminrosenberg">Ben Rosenberg</a></h3>
+  </div><div class="wrapped-markdown">
+  <h3>Imports</h3>
+  </div><div class="wrapped-code">
+  <div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">gurobipy</span> <span class="k">as</span> <span class="nn">gp</span>
+  <span class="kn">from</span> <span class="nn">gurobipy</span> <span class="kn">import</span> <span class="n">GRB</span>
+  <span class="kn">import</span> <span class="nn">time</span>
+  </pre></div>
+  
+  </div><div class="wrapped-markdown">
+  <h3>Input data</h3>
+  </div><div class="wrapped-code">
+  <div class="highlight"><pre><span></span><span class="n">nodes</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+  
+  <span class="n">edges</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)]</span>
+  
+  <span class="c1"># cost[i,j] is the cost of sending one unit of flow along edge (i,j)</span>
+  <span class="n">cost</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+      <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+      <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">8</span>
+  <span class="p">}</span> 
+  
+  <span class="c1"># capacity[i,j] is the capacity of edge (i,j)</span>
+  <span class="n">capacity</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+      <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+      <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+      <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span>
+  <span class="p">}</span>
+  
+  <span class="c1"># supply[i] is the supply (if positive) or demand (if negative) of node i</span>
+  <span class="n">supply</span> <span class="o">=</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+  </pre></div>
+  
+  </div><div class="wrapped-markdown">
+  <h3>Model Definition</h3>
+  </div><div class="wrapped-code">
+  <div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+  
+  <span class="n">model</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">Model</span><span class="p">()</span>
+  
+  <span class="c1"># set output level to max</span>
+  <span class="n">model</span><span class="o">.</span><span class="n">Params</span><span class="o">.</span><span class="n">TuneOutput</span> <span class="o">=</span> <span class="mi">3</span>
+  
+  <span class="c1"># add variable f</span>
+  <span class="n">f</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">addVars</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">GRB</span><span class="o">.</span><span class="n">CONTINUOUS</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;f&#39;</span><span class="p">)</span>
+  
+  <span class="c1"># add constraint representing supply/demand</span>
+  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+      <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span> <span class="o">-</span>
+                      <span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>
+                     <span class="o">==</span> <span class="n">supply</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+  
+  <span class="c1"># add constraint on edge flows w.r.t. capacities</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
+      <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">capacity</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+  
+  <span class="c1"># add constraint on edge flows w.r.t. 0</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
+      <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
+      
+  <span class="c1"># set objective</span>
+  <span class="n">model</span><span class="o">.</span><span class="n">setObjective</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">cost</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">),</span> <span class="n">GRB</span><span class="o">.</span><span class="n">MINIMIZE</span><span class="p">)</span>
+  
+  <span class="n">model</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+  
+  <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+  
+  <span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
+  
+  <span class="k">try</span><span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Objective value found: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objVal</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+  <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Could not find an objective value. </span><span class="se">\n</span><span class="s1">Traceback:</span><span class="se">\n\t</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+  </pre></div>
+  
+  </div><div class="wrapped-output"><pre>
+  Set parameter TuneOutput to value 3
+  Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+  Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
+  Optimize a model with 12 rows, 16 columns and 16 nonzeros
+  Model fingerprint: 0xaf2c58bd
+  Coefficient statistics:
+    Matrix range     [1e+00, 1e+00]
+    Objective range  [2e+00, 8e+00]
+    Bounds range     [0e+00, 0e+00]
+    RHS range        [2e+00, 6e+00]
+  Presolve removed 12 rows and 16 columns
+  Presolve time: 0.01s
+  Presolve: All rows and columns removed
+  Iteration    Objective       Primal Inf.    Dual Inf.      Time
+         0    1.4000000e+01   0.000000e+00   0.000000e+00      0s
+  
+  Solved in 0 iterations and 0.01 seconds (0.00 work units)
+  Optimal objective  1.400000000e+01
+  
+  [Total time used: 0 minutes, 0 seconds]
+  
+  Objective value found: 14.0
+  
+  </pre></div><div class="wrapped-code">
+  <div class="highlight"><pre><span></span><span class="c1"># optimal solution</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;f[</span><span class="si">{}</span><span class="s1">,</span><span class="si">{}</span><span class="s1">] = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+          <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">x</span>
+      <span class="p">))</span>
+  </pre></div>
+  
+  </div><div class="wrapped-output"><pre>
+  f[0,1] = 3.0
+  f[0,3] = 2.0
+  f[2,1] = 3.0
+  f[2,3] = 0.0
+  
+  </pre></div></div>
 
-    
 </div>
 <footer><a href="https://github.com/oriepython/orpy/blob/main/concepts/ilp/mcf.html">Edit this page on GitHub</a></footer>
 </div>

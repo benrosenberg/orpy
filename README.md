@@ -29,6 +29,28 @@ If creating a new page:
 1. Copy another page in the same directory to serve as the starting template
 2. Rename that file to a reasonable abbreviation that does not conflict with anything else in the directory
 3. Edit that file to remove the unneeded content
+
+If the page template from which you're starting **does not already have the KaTeX CSS and JS blurb in the header, make sure you add it:
+
+```html
+  <!-- KaTeX JS and CSS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+   var mathElements = document.getElementsByClassName("math");
+   var macros = [];
+   for (var i = 0; i < mathElements.length; i++) {
+    var texText = mathElements[i].firstChild;
+    if (mathElements[i].tagName == "SPAN") {
+     katex.render(texText.data, mathElements[i], {
+      displayMode: mathElements[i].classList.contains('display'),
+      throwOnError: false,
+      macros: macros,
+      fleqn: false
+     });
+  }}});
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" />
+```
  
 Then:
 
