@@ -30,7 +30,7 @@ If creating a new page:
 2. Rename that file to a reasonable abbreviation that does not conflict with anything else in the directory
 3. Edit that file to remove the unneeded content
  
-Now:
+Then:
 
 1. Create a new Jupyter Notebook in that directory, with the same name as the HTML file. For example, if the HTML file for the new wiki page is has the filename `filename.html`, the Jupyter Notebook file should have the filename `filename.ipynb`.
    - Alternatively, if the example is already in the form of a Jupyter Notebook, simply copy the notebook file into the directory and rename it so that it follows the above naming scheme
