@@ -5,29 +5,40 @@ Everything you need to know about Python for ORIE at Cornell, including `pandas`
 
 ## TODO
 
- - [x] Find a good way to have syntax highlighting work in pure HTML (using pygments with default style incorporated into `style.css`)
- - [x] create a favicon that works
- - [x] make the sidebar into a hamburger menu on mobile (instead did something with css that made mobile usable)
- - [x] Courses: finish courses besides ENGRI 1101 (me: 2700, 3120, 3150, 3300, 3310, 3500, 3510, 4330, 4350, 4390, 4580, 4630, 4741, 4820, 4990)
- - [x] Tools: finish tool pages (anaconda, colab, jupyter); write up general advice for events/ilps
+ - [x] Find a good way to include Jupyter Notebooks in HTML (built a better version of `nbconvert`, see below)
+ - [x] Create a good favicon 
+ - [x] Make website look better/be usable on mobile
+ - [x] Courses: finish all courses listed (more can still be added via pull requests!)
+ - [ ] Tools: write up general advice for events/ilps
  - [ ] Concepts: do all examples
 
 ## Editing this wiki
 
 This wiki is written in pure HTML/CSS. That makes it harder to edit, but makes it infinitely more customizable and limits annoying complications with external packages.
 
-Code supplied to this wiki should be formatted using pygments. There is already css in the `style.css` file which corresponds to the default pygments theme, so all you need to do before pasting the code directly onto a page is run the following command (in a directory on your own system, and not in the repo itself!):
+In general, to make another page, just copy a preexisting page, rename it, and edit that. This removes any work w.r.t. formatting stuff like the sidebar and header.
 
-```
-pygmentize -f html /path/to/file.py
-```
+### Code examples
 
-This will print a HTML-highlighted version of `file.py` out in your terminal. If you'd prefer not to copy and paste from there you may want to instead run:
+Code examples on this wiki are supplied with Jupyter Notebook files (`.ipynb` files). 
 
-```
-pygmentize -f html /path/to/file.py > out.html
-```
+The workflow for creating a code example is as follows.
 
-This will create a new file `out.html` in the current directory which contains the HTML-highlighted output, which you can then copy and paste from. **Be careful** that you don't already have a file named `out.html` in your current directory, as this command will wipe it!
+If creating a new page:
+
+ - Copy another page in the same directory to serve as the starting template
+ - Rename that file to a reasonable abbreviation that does not conflict with anything else in the directory
+ - Edit that file to remove the unneeded content
+ 
+Now:
+
+ - Create a new Jupyter Notebook in that directory, with the same name as the HTML file. For example, if the HTML file for the new wiki page is has the filename `filename.html`, the Jupyter Notebook file should have the filename `filename.ipynb`.
+   - Alternatively, if the example is already in the form of a Jupyter Notebook, simply copy the notebook file into the directory and rename it so that it follows the above naming scheme
+ - Write up the example in that notebook file
+ - **Run the `nbconv.py` script linked here:** [nbconv.py script gist](https://gist.github.com/benrosenberg/66b02e9842b6082101d97e5cec344e05) 
+   - When running the script, choose a value for `out_filename` that **does not conflict** with other files in the directory, as they will be overwritten if there is a name conflict. A surefire choice is `out.html`
+   - Make sure the `standalone` parameter is off; that is, **do not** include a `-s` or `--standalone` flag when running (e.g.) `python nbconv.py filename.ipynb out.html`
+ - Copy the contents of the script output file into the wiki page, where the other content was deleted. (For examples of correctly formatted wiki pages, click the "Edit this page on GitHub" link in the footer of any page with a code example on it.)
+ - Delete the script output file
 
 
