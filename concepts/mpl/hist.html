@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ORIE Python Wiki</title>
+  <link rel="stylesheet" href="https://orpy.wiki/style.css" />
+  <link rel="icon" type="image/png" href="https://orpy.wiki/favicon.png">
+  <style></style>
+
+  <!-- KaTeX JS and CSS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+   var mathElements = document.getElementsByClassName("math");
+   var macros = [];
+   for (var i = 0; i < mathElements.length; i++) {
+    var texText = mathElements[i].firstChild;
+    if (mathElements[i].tagName == "SPAN") {
+     katex.render(texText.data, mathElements[i], {
+      displayMode: mathElements[i].classList.contains('display'),
+      throwOnError: false,
+      macros: macros,
+      fleqn: false
+     });
+  }}});
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" />
+
+</head>
+
+<!-- Side navigation -->
+<div class="sidenav">
+    <h1 class="logo"><span class="logo">OR<br><span class="py">PY</span></h1>
+    <a href="https://orpy.wiki/index.html">Home</a>
+    <a href="https://orpy.wiki/about">About</a>
+    <hr>
+    <a href="https://orpy.wiki/courses/index.html">Courses</a>
+    <a href="https://orpy.wiki/concepts/index.html">Concepts</a>
+    <a href="https://orpy.wiki/tools/index.html">Tools</a>
+    <hr>
+    <a href="https://github.com/oriepython/orpy">GitHub</a>
+</div>
+
+<!-- Page content -->
+<div class="main">
+<div class="content">
+<h1>Simple Histogram</h1>
+
+<!-- Converted IPYNB file -->
+<div class="wrapped-ipynb"><div class="wrapped-markdown">
+<h2>Simple Histogram/Sampling from normal distribution</h2>
+<p>This is a really simple example of a histogram in MatPlotLib, using a random sample from a normal distribution with <code>np.random.normal</code>.</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+</pre></div>
+
+</div><div class="wrapped-markdown">
+<p>The function <code>np.random.normal</code> takes many arguments, but the most important ones are <code>loc</code>, <code>scale</code>, and <code>size</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>loc</code></td>
+<td>determines the mean (<span class="math inline">\mu</span>) of the normal distribution from which the sample is taken</td>
+</tr>
+<tr>
+<td><code>scale</code></td>
+<td>determines the standard deviation (<span class="math inline">\sigma</span> of the normal distribution from which the sample is taken</td>
+</tr>
+<tr>
+<td><code>size</code></td>
+<td>the number of samples to draw</td>
+</tr>
+</tbody>
+</table>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="n">N</span> <span class="o">=</span> <span class="mi">10_000</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">N</span><span class="p">)</span>
+</pre></div>
+
+</div><div class="wrapped-markdown">
+<p>The <code>plt.hist()</code> function takes in one positional argument for data. </p>
+<p>An important keyword argument is the <code>bins</code> argument, which determines how many bins the histogram is split into.</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+<img src="data:image/png;base64,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
+">
+</pre></div></div>
+
+</div>
+<footer><a href="https://github.com/oriepython/orpy/blob/main/concepts/mpl/hist.html">Edit this page on GitHub</a></footer>
+</div>

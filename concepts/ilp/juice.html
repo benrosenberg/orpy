@@ -53,539 +53,539 @@
 
 <!-- Converted IPYNB file -->
 <div class="wrapped-ipynb" id="gurobipy"><div class="wrapped-markdown">
-    <h1>Juice Problem ILP (GurobiPy)</h1>
-    <h3>Author: <a href="https://benrosenberg.info">Ben Rosenberg</a></h3>
-    </div><div class="wrapped-markdown">
-    <h3>Imports</h3>
-    <p>We begin by importing some relevant libraries. We import <code>GurobiPy</code> to formulate and solve the ILP, and we import <code>time</code> to time the entire process of supplying the constraints solving the ILP. Lastly, we'll use <code>pandas</code> to work with the input data to the ILP.</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">gurobipy</span> <span class="k">as</span> <span class="nn">gp</span>
-    <span class="kn">from</span> <span class="nn">gurobipy</span> <span class="kn">import</span> <span class="n">GRB</span>
-    <span class="kn">import</span> <span class="nn">time</span>
-    <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-    </pre></div>
+<h2>Juice Problem ILP (GurobiPy)</h2>
+<h3>Author: <a href="https://benrosenberg.info">Ben Rosenberg</a></h3>
+</div><div class="wrapped-markdown">
+<h3>Imports</h3>
+<p>We begin by importing some relevant libraries. We import <code>GurobiPy</code> to formulate and solve the ILP, and we import <code>time</code> to time the entire process of supplying the constraints solving the ILP. Lastly, we'll use <code>pandas</code> to work with the input data to the ILP.</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">gurobipy</span> <span class="k">as</span> <span class="nn">gp</span>
+<span class="kn">from</span> <span class="nn">gurobipy</span> <span class="kn">import</span> <span class="n">GRB</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+</pre></div>
+
+</div><div class="wrapped-markdown">
+<h2>Problem definition</h2>
+<p>The "Juice Problem" is pretty vague. This is basically just a simple example of an ILP with constraints based on nutritional values of various ingredients. We'll define an input here:</p>
+<table>
+<thead>
+<tr>
+<th>Ingredient</th>
+<th>Calories</th>
+<th>Fat</th>
+<th>Cholesterol</th>
+<th>Sodium</th>
+<th>Sugar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>110</td>
+<td>4</td>
+<td>30</td>
+<td>340</td>
+<td>15</td>
+</tr>
+<tr>
+<td>B</td>
+<td>150</td>
+<td>8</td>
+<td>40</td>
+<td>120</td>
+<td>35</td>
+</tr>
+<tr>
+<td>C</td>
+<td>250</td>
+<td>2</td>
+<td>60</td>
+<td>450</td>
+<td>40</td>
+</tr>
+<tr>
+<td>D</td>
+<td>270</td>
+<td>10</td>
+<td>20</td>
+<td>240</td>
+<td>60</td>
+</tr>
+<tr>
+<td>E</td>
+<td>350</td>
+<td>15</td>
+<td>70</td>
+<td>760</td>
+<td>45</td>
+</tr>
+</tbody>
+</table>
+<p>And let's make some constraints. Our juice can have:</p>
+<ul>
+<li>No fewer than 2000 units of calories</li>
+<li>No more than 70 units of fat</li>
+<li>No more than 750 units of cholesterol</li>
+<li>No more than 3000 units of sodium</li>
+</ul>
+<p>Furthermore, let's say that the ratio of cholesterol to sodium must be at most 1:10.</p>
+<p>Lastly, let's make the objective to minimize the amount of sugar.</p>
+</div><div class="wrapped-markdown">
+<h3>Input entry</h3>
+<p>We'll use <code>pandas</code> to store our input in a more manageable form (a DataFrame). This allows this notebook to also serve as a minimal example of how one might use the <code>pandas</code> library.</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="c1"># define ingredients using a dictionary</span>
+<span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;Ingredients&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">],</span>
+    <span class="s1">&#39;Calories&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">110</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">250</span><span class="p">,</span> <span class="mi">270</span><span class="p">,</span> <span class="mi">350</span><span class="p">],</span>
+    <span class="s1">&#39;Fat&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">],</span>
+    <span class="s1">&#39;Cholesterol&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">70</span><span class="p">],</span>
+    <span class="s1">&#39;Sodium&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">340</span><span class="p">,</span> <span class="mi">120</span><span class="p">,</span> <span class="mi">450</span><span class="p">,</span> <span class="mi">240</span><span class="p">,</span> <span class="mi">760</span><span class="p">],</span>
+    <span class="s1">&#39;Sugar&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">15</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">45</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;Ingredients&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Calories&#39;</span><span class="p">][</span><span class="s1">&#39;A&#39;</span><span class="p">])</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+110
+
+</pre></div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">model</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">Model</span><span class="p">()</span>
+
+<span class="c1"># set output level to max</span>
+<span class="n">model</span><span class="o">.</span><span class="n">Params</span><span class="o">.</span><span class="n">TuneOutput</span> <span class="o">=</span> <span class="mi">3</span>
+
+<span class="c1"># add variables for each ingredient</span>
+<span class="n">I</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">addVars</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">GRB</span><span class="o">.</span><span class="n">CONTINUOUS</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">)</span>
+
+<span class="c1"># add constraint on calories</span>
+<span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Calories&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2000</span><span class="p">)</span>
+
+<span class="c1"># add constraint on fat</span>
+<span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Fat&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">70</span><span class="p">)</span>
+
+<span class="c1"># add constraint on cholesterol</span>
+<span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">750</span><span class="p">)</span>
+
+<span class="c1"># add constraint on sodium</span>
+<span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3000</span><span class="p">)</span>
+
+<span class="c1"># add constraint on cholesterol:sodium ratio</span>
+<span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span> 
+    <span class="o">&lt;=</span> <span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
     
-    </div><div class="wrapped-markdown">
-    <h2>Problem definition</h2>
-    <p>The "Juice Problem" is pretty vague. This is basically just a simple example of an ILP with constraints based on nutritional values of various ingredients. We'll define an input here:</p>
-    <table>
-    <thead>
-    <tr>
-    <th>Ingredient</th>
-    <th>Calories</th>
-    <th>Fat</th>
-    <th>Cholesterol</th>
-    <th>Sodium</th>
-    <th>Sugar</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-    <td>A</td>
-    <td>110</td>
-    <td>4</td>
-    <td>30</td>
-    <td>340</td>
-    <td>15</td>
-    </tr>
-    <tr>
-    <td>B</td>
-    <td>150</td>
-    <td>8</td>
-    <td>40</td>
-    <td>120</td>
-    <td>35</td>
-    </tr>
-    <tr>
-    <td>C</td>
-    <td>250</td>
-    <td>2</td>
-    <td>60</td>
-    <td>450</td>
-    <td>40</td>
-    </tr>
-    <tr>
-    <td>D</td>
-    <td>270</td>
-    <td>10</td>
-    <td>20</td>
-    <td>240</td>
-    <td>60</td>
-    </tr>
-    <tr>
-    <td>E</td>
-    <td>350</td>
-    <td>15</td>
-    <td>70</td>
-    <td>760</td>
-    <td>45</td>
-    </tr>
-    </tbody>
-    </table>
-    <p>And let's make some constraints. Our juice can have:</p>
-    <ul>
-    <li>No fewer than 2000 units of calories</li>
-    <li>No more than 70 units of fat</li>
-    <li>No more than 750 units of cholesterol</li>
-    <li>No more than 3000 units of sodium</li>
-    </ul>
-    <p>Furthermore, let's say that the ratio of cholesterol to sodium must be at most 1:10.</p>
-    <p>Lastly, let's make the objective to minimize the amount of sugar.</p>
-    </div><div class="wrapped-markdown">
-    <h3>Input entry</h3>
-    <p>We'll use <code>pandas</code> to store our input in a more manageable form (a DataFrame). This allows this notebook to also serve as a minimal example of how one might use the <code>pandas</code> library.</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="c1"># define ingredients using a dictionary</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;Ingredients&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">],</span>
-        <span class="s1">&#39;Calories&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">110</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">250</span><span class="p">,</span> <span class="mi">270</span><span class="p">,</span> <span class="mi">350</span><span class="p">],</span>
-        <span class="s1">&#39;Fat&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">],</span>
-        <span class="s1">&#39;Cholesterol&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">70</span><span class="p">],</span>
-        <span class="s1">&#39;Sodium&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">340</span><span class="p">,</span> <span class="mi">120</span><span class="p">,</span> <span class="mi">450</span><span class="p">,</span> <span class="mi">240</span><span class="p">,</span> <span class="mi">760</span><span class="p">],</span>
-        <span class="s1">&#39;Sugar&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">15</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">45</span><span class="p">]</span>
-    <span class="p">}</span>
+<span class="c1"># set objective</span>
+<span class="n">model</span><span class="o">.</span><span class="n">setObjective</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sugar&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Objective value found: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objVal</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Could not find an objective value. </span><span class="se">\n</span><span class="s1">Traceback:</span><span class="se">\n\t</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+Set parameter Username
+Academic license - for non-commercial use only - expires 2023-10-13
+Set parameter TuneOutput to value 3
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
+Optimize a model with 5 rows, 5 columns and 25 nonzeros
+Model fingerprint: 0xcf744ec6
+Coefficient statistics:
+    Matrix range     [2e+00, 8e+02]
+    Objective range  [2e+01, 6e+01]
+    Bounds range     [0e+00, 0e+00]
+    RHS range        [7e+01, 3e+03]
+Presolve time: 0.01s
+Presolved: 5 rows, 5 columns, 25 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+        0    0.0000000e+00   1.250000e+02   0.000000e+00      0s
+        3    3.5644712e+02   0.000000e+00   0.000000e+00      0s
+
+Solved in 3 iterations and 0.02 seconds (0.00 work units)
+Optimal objective  3.564471197e+02
+
+[Total time used: 0 minutes, 0 seconds]
+
+Objective value found: 356.44711968958313
+
+</pre></div><div class="wrapped-markdown">
+<p>Now that we have our objective, let's print out our solution values:</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> units of </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">ingredient</span>
+    <span class="p">))</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+0.0 units of A
+0.0 units of B
+1.1600835737737538 units of C
+3.5668092727091834 units of D
+2.1341160083573776 units of E
+
+</pre></div><div class="wrapped-markdown">
+<h3>Integer Program</h3>
+<p>Say that we have the additional constraint that we can only use integer amounts of each ingredient. This means we need to use integer variables (<code>m.IntVar(...)</code>) rather than continuous ones (<code>m.NumVar(...)</code>):</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">model</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">Model</span><span class="p">()</span>
+
+<span class="c1"># set output level to max</span>
+<span class="n">model</span><span class="o">.</span><span class="n">Params</span><span class="o">.</span><span class="n">TuneOutput</span> <span class="o">=</span> <span class="mi">3</span>
+
+<span class="c1"># add variables for each ingredient</span>
+<span class="n">I</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">addVars</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">GRB</span><span class="o">.</span><span class="n">INTEGER</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">)</span> <span class="c1"># &lt;-- change</span>
+
+<span class="c1"># add constraint on calories</span>
+<span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Calories&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2000</span><span class="p">)</span>
+
+<span class="c1"># add constraint on fat</span>
+<span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Fat&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">70</span><span class="p">)</span>
+
+<span class="c1"># add constraint on cholesterol</span>
+<span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">750</span><span class="p">)</span>
+
+<span class="c1"># add constraint on sodium</span>
+<span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3000</span><span class="p">)</span>
+
+<span class="c1"># add constraint on cholesterol:sodium ratio</span>
+<span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span> 
+    <span class="o">&lt;=</span> <span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
     
-    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;Ingredients&#39;</span><span class="p">)</span>
-    </pre></div>
-    
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
-    </pre></div>
-    
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Calories&#39;</span><span class="p">][</span><span class="s1">&#39;A&#39;</span><span class="p">])</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    110
-    
-    </pre></div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    
-    <span class="n">model</span> <span class="o">=</span> <span class="n">model</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">Model</span><span class="p">()</span>
-    
-    <span class="c1"># set output level to max</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">Params</span><span class="o">.</span><span class="n">TuneOutput</span> <span class="o">=</span> <span class="mi">3</span>
-    
-    <span class="c1"># add variables for each ingredient</span>
-    <span class="n">I</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">addVars</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">GRB</span><span class="o">.</span><span class="n">CONTINUOUS</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on calories</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Calories&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2000</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on fat</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Fat&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">70</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on cholesterol</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">750</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on sodium</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3000</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on cholesterol:sodium ratio</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span> 
-       <span class="o">&lt;=</span> <span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
-        
-    <span class="c1"># set objective</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">setObjective</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sugar&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
-    
-    <span class="n">model</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
-    
-    <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    
-    <span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
-    
-    <span class="k">try</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Objective value found: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objVal</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Could not find an objective value. </span><span class="se">\n</span><span class="s1">Traceback:</span><span class="se">\n\t</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    Set parameter Username
-    Academic license - for non-commercial use only - expires 2023-10-13
-    Set parameter TuneOutput to value 3
-    Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
-    Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
-    Optimize a model with 5 rows, 5 columns and 25 nonzeros
-    Model fingerprint: 0xcf744ec6
-    Coefficient statistics:
-      Matrix range     [2e+00, 8e+02]
-      Objective range  [2e+01, 6e+01]
-      Bounds range     [0e+00, 0e+00]
-      RHS range        [7e+01, 3e+03]
-    Presolve time: 0.01s
-    Presolved: 5 rows, 5 columns, 25 nonzeros
-    
-    Iteration    Objective       Primal Inf.    Dual Inf.      Time
-           0    0.0000000e+00   1.250000e+02   0.000000e+00      0s
-           3    3.5644712e+02   0.000000e+00   0.000000e+00      0s
-    
-    Solved in 3 iterations and 0.02 seconds (0.00 work units)
-    Optimal objective  3.564471197e+02
-    
-    [Total time used: 0 minutes, 0 seconds]
-    
-    Objective value found: 356.44711968958313
-    
-    </pre></div><div class="wrapped-markdown">
-    <p>Now that we have our objective, let's print out our solution values:</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> units of </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">ingredient</span>
-        <span class="p">))</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    0.0 units of A
-    0.0 units of B
-    1.1600835737737538 units of C
-    3.5668092727091834 units of D
-    2.1341160083573776 units of E
-    
-    </pre></div><div class="wrapped-markdown">
-    <h3>Integer Program</h3>
-    <p>Say that we have the additional constraint that we can only use integer amounts of each ingredient. This means we need to use integer variables (<code>m.IntVar(...)</code>) rather than continuous ones (<code>m.NumVar(...)</code>):</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    
-    <span class="n">model</span> <span class="o">=</span> <span class="n">model</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">Model</span><span class="p">()</span>
-    
-    <span class="c1"># set output level to max</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">Params</span><span class="o">.</span><span class="n">TuneOutput</span> <span class="o">=</span> <span class="mi">3</span>
-    
-    <span class="c1"># add variables for each ingredient</span>
-    <span class="n">I</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">addVars</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">GRB</span><span class="o">.</span><span class="n">INTEGER</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">)</span> <span class="c1"># &lt;-- change</span>
-    
-    <span class="c1"># add constraint on calories</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Calories&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2000</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on fat</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Fat&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">70</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on cholesterol</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">750</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on sodium</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3000</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on cholesterol:sodium ratio</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span> 
-       <span class="o">&lt;=</span> <span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
-        
-    <span class="c1"># set objective</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">setObjective</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sugar&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
-    
-    <span class="n">model</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
-    
-    <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    
-    <span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
-    
-    <span class="k">try</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Objective value found: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objVal</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Could not find an objective value. </span><span class="se">\n</span><span class="s1">Traceback:</span><span class="se">\n\t</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    Set parameter TuneOutput to value 3
-    Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
-    Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
-    Optimize a model with 5 rows, 5 columns and 25 nonzeros
-    Model fingerprint: 0x9f3dd579
-    Variable types: 0 continuous, 5 integer (0 binary)
-    Coefficient statistics:
-      Matrix range     [2e+00, 8e+02]
-      Objective range  [2e+01, 6e+01]
-      Bounds range     [0e+00, 0e+00]
-      RHS range        [7e+01, 3e+03]
-    Presolve removed 1 rows and 0 columns
-    Presolve time: 0.01s
-    Presolved: 4 rows, 5 columns, 20 nonzeros
-    Variable types: 0 continuous, 5 integer (0 binary)
-    Found heuristic solution: objective 430.0000000
-    
-    Root relaxation: objective 3.564471e+02, 3 iterations, 0.00 seconds (0.00 work units)
-    
-        Nodes    |    Current Node    |     Objective Bounds      |     Work
-     Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
-    
-         0     0  356.44712    0    3  430.00000  356.44712  17.1%     -    0s
-         0     0  392.28571    0    3  430.00000  392.28571  8.77%     -    0s
-    
-    Cutting planes:
-      Gomory: 1
-      StrongCG: 2
-    
-    Explored 1 nodes (8 simplex iterations) in 0.04 seconds (0.00 work units)
-    Thread count was 8 (of 8 available processors)
-    
-    Solution count 1: 430 
-    
-    Optimal solution found (tolerance 1.00e-04)
-    Best objective 4.300000000000e+02, best bound 4.300000000000e+02, gap 0.0000%
-    
-    [Total time used: 0 minutes, 0 seconds]
-    
-    Objective value found: 430.0
-    
-    </pre></div><div class="wrapped-markdown">
-    <p>And here are the solution values:</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> units of </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">ingredient</span>
-        <span class="p">))</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    2.0 units of A
-    -0.0 units of B
-    1.0 units of C
-    6.0 units of D
-    -0.0 units of E
-    
-    </pre></div><div class="wrapped-markdown">
-    <p>Note how adding the constraint that the amounts of each ingredient must be integer results in a higher (worse) objective value. In general, adding constraints to a problem will result in an equal or worse result than the previously obtained one.</p>
-    </div></div>
+<span class="c1"># set objective</span>
+<span class="n">model</span><span class="o">.</span><span class="n">setObjective</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sugar&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Objective value found: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objVal</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Could not find an objective value. </span><span class="se">\n</span><span class="s1">Traceback:</span><span class="se">\n\t</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+Set parameter TuneOutput to value 3
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
+Optimize a model with 5 rows, 5 columns and 25 nonzeros
+Model fingerprint: 0x9f3dd579
+Variable types: 0 continuous, 5 integer (0 binary)
+Coefficient statistics:
+    Matrix range     [2e+00, 8e+02]
+    Objective range  [2e+01, 6e+01]
+    Bounds range     [0e+00, 0e+00]
+    RHS range        [7e+01, 3e+03]
+Presolve removed 1 rows and 0 columns
+Presolve time: 0.01s
+Presolved: 4 rows, 5 columns, 20 nonzeros
+Variable types: 0 continuous, 5 integer (0 binary)
+Found heuristic solution: objective 430.0000000
+
+Root relaxation: objective 3.564471e+02, 3 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+    Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+        0     0  356.44712    0    3  430.00000  356.44712  17.1%     -    0s
+        0     0  392.28571    0    3  430.00000  392.28571  8.77%     -    0s
+
+Cutting planes:
+    Gomory: 1
+    StrongCG: 2
+
+Explored 1 nodes (8 simplex iterations) in 0.04 seconds (0.00 work units)
+Thread count was 8 (of 8 available processors)
+
+Solution count 1: 430 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 4.300000000000e+02, best bound 4.300000000000e+02, gap 0.0000%
+
+[Total time used: 0 minutes, 0 seconds]
+
+Objective value found: 430.0
+
+</pre></div><div class="wrapped-markdown">
+<p>And here are the solution values:</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> units of </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">ingredient</span>
+    <span class="p">))</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+2.0 units of A
+-0.0 units of B
+1.0 units of C
+6.0 units of D
+-0.0 units of E
+
+</pre></div><div class="wrapped-markdown">
+<p>Note how adding the constraint that the amounts of each ingredient must be integer results in a higher (worse) objective value. In general, adding constraints to a problem will result in an equal or worse result than the previously obtained one.</p>
+</div></div>
 
 <!-- Converted IPYNB file -->
 <div class="wrapped-ipynb" id="ortools"><div class="wrapped-markdown">
-    <h1>Juice Problem ILP (OR-Tools)</h1>
-    <h3>Author: <a href="https://benrosenberg.info">Ben Rosenberg</a></h3>
-    </div><div class="wrapped-markdown">
-    <h3>Imports</h3>
-    <p>We begin by importing some relevant libraries. We import <code>ortools</code> to formulate and solve the ILP, and we import <code>time</code> to time the entire process of supplying the constraints solving the ILP. Lastly, we'll use <code>pandas</code> to work with the input data to the ILP.</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ortools.linear_solver</span> <span class="kn">import</span> <span class="n">pywraplp</span> <span class="k">as</span> <span class="n">OR</span>
-    <span class="kn">import</span> <span class="nn">time</span>
-    <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-    </pre></div>
+<h2>Juice Problem ILP (OR-Tools)</h2>
+<h3>Author: <a href="https://benrosenberg.info">Ben Rosenberg</a></h3>
+</div><div class="wrapped-markdown">
+<h3>Imports</h3>
+<p>We begin by importing some relevant libraries. We import <code>ortools</code> to formulate and solve the ILP, and we import <code>time</code> to time the entire process of supplying the constraints solving the ILP. Lastly, we'll use <code>pandas</code> to work with the input data to the ILP.</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ortools.linear_solver</span> <span class="kn">import</span> <span class="n">pywraplp</span> <span class="k">as</span> <span class="n">OR</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+</pre></div>
+
+</div><div class="wrapped-markdown">
+<h2>Problem definition</h2>
+<p>The "Juice Problem" is pretty vague. This is basically just a simple example of an ILP with constraints based on nutritional values of various ingredients. We'll define an input here:</p>
+<table>
+<thead>
+<tr>
+<th>Ingredient</th>
+<th>Calories</th>
+<th>Fat</th>
+<th>Cholesterol</th>
+<th>Sodium</th>
+<th>Sugar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>110</td>
+<td>4</td>
+<td>30</td>
+<td>340</td>
+<td>15</td>
+</tr>
+<tr>
+<td>B</td>
+<td>150</td>
+<td>8</td>
+<td>40</td>
+<td>120</td>
+<td>35</td>
+</tr>
+<tr>
+<td>C</td>
+<td>250</td>
+<td>2</td>
+<td>60</td>
+<td>450</td>
+<td>40</td>
+</tr>
+<tr>
+<td>D</td>
+<td>270</td>
+<td>10</td>
+<td>20</td>
+<td>240</td>
+<td>60</td>
+</tr>
+<tr>
+<td>E</td>
+<td>350</td>
+<td>15</td>
+<td>70</td>
+<td>760</td>
+<td>45</td>
+</tr>
+</tbody>
+</table>
+<p>And let's make some constraints. Our juice can have:</p>
+<ul>
+<li>No fewer than 2000 units of calories</li>
+<li>No more than 70 units of fat</li>
+<li>No more than 750 units of cholesterol</li>
+<li>No more than 3000 units of sodium</li>
+</ul>
+<p>Furthermore, let's say that the ratio of cholesterol to sodium must be at most 1:10.</p>
+<p>Lastly, let's make the objective to minimize the amount of sugar.</p>
+</div><div class="wrapped-markdown">
+<h3>Input entry</h3>
+<p>We'll use <code>pandas</code> to store our input in a more manageable form (a DataFrame). This allows this notebook to also serve as a minimal example of how one might use the <code>pandas</code> library.</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="c1"># define ingredients using a dictionary</span>
+<span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;Ingredients&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">],</span>
+    <span class="s1">&#39;Calories&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">110</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">250</span><span class="p">,</span> <span class="mi">270</span><span class="p">,</span> <span class="mi">350</span><span class="p">],</span>
+    <span class="s1">&#39;Fat&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">],</span>
+    <span class="s1">&#39;Cholesterol&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">70</span><span class="p">],</span>
+    <span class="s1">&#39;Sodium&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">340</span><span class="p">,</span> <span class="mi">120</span><span class="p">,</span> <span class="mi">450</span><span class="p">,</span> <span class="mi">240</span><span class="p">,</span> <span class="mi">760</span><span class="p">],</span>
+    <span class="s1">&#39;Sugar&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">15</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">45</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;Ingredients&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Calories&#39;</span><span class="p">][</span><span class="s1">&#39;A&#39;</span><span class="p">])</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+110
+
+</pre></div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">OR</span><span class="o">.</span><span class="n">Solver</span><span class="p">(</span><span class="s1">&#39;Juice Problem&#39;</span><span class="p">,</span> <span class="n">OR</span><span class="o">.</span><span class="n">Solver</span><span class="o">.</span><span class="n">CBC_MIXED_INTEGER_PROGRAMMING</span><span class="p">)</span>
+
+<span class="c1"># add variables for each ingredient</span>
+<span class="n">I</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+    <span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">NumVar</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">infinity</span><span class="p">(),</span> <span class="n">ingredient</span><span class="p">)</span>
+
+<span class="c1"># add constraint on calories</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Calories&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2000</span><span class="p">)</span>
+
+<span class="c1"># add constraint on fat</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Fat&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">70</span><span class="p">)</span>
+
+<span class="c1"># add constraint on cholesterol</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">750</span><span class="p">)</span>
+
+<span class="c1"># add constraint on sodium</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3000</span><span class="p">)</span>
+
+<span class="c1"># add constraint on cholesterol:sodium ratio</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span> 
+    <span class="o">&lt;=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
     
-    </div><div class="wrapped-markdown">
-    <h2>Problem definition</h2>
-    <p>The "Juice Problem" is pretty vague. This is basically just a simple example of an ILP with constraints based on nutritional values of various ingredients. We'll define an input here:</p>
-    <table>
-    <thead>
-    <tr>
-    <th>Ingredient</th>
-    <th>Calories</th>
-    <th>Fat</th>
-    <th>Cholesterol</th>
-    <th>Sodium</th>
-    <th>Sugar</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-    <td>A</td>
-    <td>110</td>
-    <td>4</td>
-    <td>30</td>
-    <td>340</td>
-    <td>15</td>
-    </tr>
-    <tr>
-    <td>B</td>
-    <td>150</td>
-    <td>8</td>
-    <td>40</td>
-    <td>120</td>
-    <td>35</td>
-    </tr>
-    <tr>
-    <td>C</td>
-    <td>250</td>
-    <td>2</td>
-    <td>60</td>
-    <td>450</td>
-    <td>40</td>
-    </tr>
-    <tr>
-    <td>D</td>
-    <td>270</td>
-    <td>10</td>
-    <td>20</td>
-    <td>240</td>
-    <td>60</td>
-    </tr>
-    <tr>
-    <td>E</td>
-    <td>350</td>
-    <td>15</td>
-    <td>70</td>
-    <td>760</td>
-    <td>45</td>
-    </tr>
-    </tbody>
-    </table>
-    <p>And let's make some constraints. Our juice can have:</p>
-    <ul>
-    <li>No fewer than 2000 units of calories</li>
-    <li>No more than 70 units of fat</li>
-    <li>No more than 750 units of cholesterol</li>
-    <li>No more than 3000 units of sodium</li>
-    </ul>
-    <p>Furthermore, let's say that the ratio of cholesterol to sodium must be at most 1:10.</p>
-    <p>Lastly, let's make the objective to minimize the amount of sugar.</p>
-    </div><div class="wrapped-markdown">
-    <h3>Input entry</h3>
-    <p>We'll use <code>pandas</code> to store our input in a more manageable form (a DataFrame). This allows this notebook to also serve as a minimal example of how one might use the <code>pandas</code> library.</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="c1"># define ingredients using a dictionary</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;Ingredients&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">],</span>
-        <span class="s1">&#39;Calories&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">110</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">250</span><span class="p">,</span> <span class="mi">270</span><span class="p">,</span> <span class="mi">350</span><span class="p">],</span>
-        <span class="s1">&#39;Fat&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">],</span>
-        <span class="s1">&#39;Cholesterol&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">70</span><span class="p">],</span>
-        <span class="s1">&#39;Sodium&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">340</span><span class="p">,</span> <span class="mi">120</span><span class="p">,</span> <span class="mi">450</span><span class="p">,</span> <span class="mi">240</span><span class="p">,</span> <span class="mi">760</span><span class="p">],</span>
-        <span class="s1">&#39;Sugar&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">15</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">45</span><span class="p">]</span>
-    <span class="p">}</span>
+<span class="c1"># set objective</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Minimize</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sugar&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">Solve</span><span class="p">()</span>
+
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Objective:&#39;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">Objective</span><span class="p">()</span><span class="o">.</span><span class="n">Value</span><span class="p">())</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+
+[Total time used: 0 minutes, 0 seconds]
+Objective: 356.44711968958313
+
+</pre></div><div class="wrapped-markdown">
+<p>Now that we have our objective, let's print out our solution values:</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> units of </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span><span class="o">.</span><span class="n">solution_value</span><span class="p">(),</span> <span class="n">ingredient</span>
+    <span class="p">))</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+0.0 units of A
+0.0 units of B
+1.1600835737737498 units of C
+3.5668092727091842 units of D
+2.1341160083573794 units of E
+
+</pre></div><div class="wrapped-markdown">
+<h3>Integer Program</h3>
+<p>Say that we have the additional constraint that we can only use integer amounts of each ingredient. This means we need to use integer variables (<code>m.IntVar(...)</code>) rather than continuous ones (<code>m.NumVar(...)</code>):</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">OR</span><span class="o">.</span><span class="n">Solver</span><span class="p">(</span><span class="s1">&#39;Juice Problem&#39;</span><span class="p">,</span> <span class="n">OR</span><span class="o">.</span><span class="n">Solver</span><span class="o">.</span><span class="n">CBC_MIXED_INTEGER_PROGRAMMING</span><span class="p">)</span>
+
+<span class="c1"># add variables for each ingredient</span>
+<span class="n">I</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+    <span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">IntVar</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">infinity</span><span class="p">(),</span> <span class="n">ingredient</span><span class="p">)</span> <span class="c1"># &lt;-- change</span>
+
+<span class="c1"># add constraint on calories</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Calories&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2000</span><span class="p">)</span>
+
+<span class="c1"># add constraint on fat</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Fat&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">70</span><span class="p">)</span>
+
+<span class="c1"># add constraint on cholesterol</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">750</span><span class="p">)</span>
+
+<span class="c1"># add constraint on sodium</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3000</span><span class="p">)</span>
+
+<span class="c1"># add constraint on cholesterol:sodium ratio</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span> 
+    <span class="o">&lt;=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
     
-    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;Ingredients&#39;</span><span class="p">)</span>
-    </pre></div>
-    
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
-    </pre></div>
-    
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Calories&#39;</span><span class="p">][</span><span class="s1">&#39;A&#39;</span><span class="p">])</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    110
-    
-    </pre></div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    
-    <span class="n">m</span> <span class="o">=</span> <span class="n">OR</span><span class="o">.</span><span class="n">Solver</span><span class="p">(</span><span class="s1">&#39;Juice Problem&#39;</span><span class="p">,</span> <span class="n">OR</span><span class="o">.</span><span class="n">Solver</span><span class="o">.</span><span class="n">CBC_MIXED_INTEGER_PROGRAMMING</span><span class="p">)</span>
-    
-    <span class="c1"># add variables for each ingredient</span>
-    <span class="n">I</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
-        <span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">NumVar</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">infinity</span><span class="p">(),</span> <span class="n">ingredient</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on calories</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Calories&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2000</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on fat</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Fat&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">70</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on cholesterol</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">750</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on sodium</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3000</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on cholesterol:sodium ratio</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span> 
-       <span class="o">&lt;=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
-        
-    <span class="c1"># set objective</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Minimize</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sugar&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
-    
-    <span class="n">m</span><span class="o">.</span><span class="n">Solve</span><span class="p">()</span>
-    
-    <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    
-    <span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
-    
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Objective:&#39;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">Objective</span><span class="p">()</span><span class="o">.</span><span class="n">Value</span><span class="p">())</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    
-    [Total time used: 0 minutes, 0 seconds]
-    Objective: 356.44711968958313
-    
-    </pre></div><div class="wrapped-markdown">
-    <p>Now that we have our objective, let's print out our solution values:</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> units of </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span><span class="o">.</span><span class="n">solution_value</span><span class="p">(),</span> <span class="n">ingredient</span>
-        <span class="p">))</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    0.0 units of A
-    0.0 units of B
-    1.1600835737737498 units of C
-    3.5668092727091842 units of D
-    2.1341160083573794 units of E
-    
-    </pre></div><div class="wrapped-markdown">
-    <h3>Integer Program</h3>
-    <p>Say that we have the additional constraint that we can only use integer amounts of each ingredient. This means we need to use integer variables (<code>m.IntVar(...)</code>) rather than continuous ones (<code>m.NumVar(...)</code>):</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    
-    <span class="n">m</span> <span class="o">=</span> <span class="n">OR</span><span class="o">.</span><span class="n">Solver</span><span class="p">(</span><span class="s1">&#39;Juice Problem&#39;</span><span class="p">,</span> <span class="n">OR</span><span class="o">.</span><span class="n">Solver</span><span class="o">.</span><span class="n">CBC_MIXED_INTEGER_PROGRAMMING</span><span class="p">)</span>
-    
-    <span class="c1"># add variables for each ingredient</span>
-    <span class="n">I</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
-        <span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">IntVar</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">infinity</span><span class="p">(),</span> <span class="n">ingredient</span><span class="p">)</span> <span class="c1"># &lt;-- change</span>
-    
-    <span class="c1"># add constraint on calories</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Calories&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2000</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on fat</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Fat&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">70</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on cholesterol</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">750</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on sodium</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3000</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint on cholesterol:sodium ratio</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Cholesterol&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span> 
-       <span class="o">&lt;=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sodium&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
-        
-    <span class="c1"># set objective</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Minimize</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sugar&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
-    
-    <span class="n">m</span><span class="o">.</span><span class="n">Solve</span><span class="p">()</span>
-    
-    <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    
-    <span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
-    
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Objective:&#39;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">Objective</span><span class="p">()</span><span class="o">.</span><span class="n">Value</span><span class="p">())</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    
-    [Total time used: 0 minutes, 0 seconds]
-    Objective: 430.0
-    
-    </pre></div><div class="wrapped-markdown">
-    <p>And here are the solution values:</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> units of </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span><span class="o">.</span><span class="n">solution_value</span><span class="p">(),</span> <span class="n">ingredient</span>
-        <span class="p">))</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    0.0 units of A
-    0.0 units of B
-    1.1600835737737498 units of C
-    3.5668092727091842 units of D
-    2.1341160083573794 units of E
-    
-    </pre></div><div class="wrapped-markdown">
-    <p>Note how adding the constraint that the amounts of each ingredient must be integer results in a higher (worse) objective value. In general, adding constraints to a problem will result in an equal or worse result than the previously obtained one.</p>
-    </div></div>
+<span class="c1"># set objective</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Minimize</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Sugar&#39;</span><span class="p">][</span><span class="n">ingredient</span><span class="p">]</span> <span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">Solve</span><span class="p">()</span>
+
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Objective:&#39;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">Objective</span><span class="p">()</span><span class="o">.</span><span class="n">Value</span><span class="p">())</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+
+[Total time used: 0 minutes, 0 seconds]
+Objective: 430.0
+
+</pre></div><div class="wrapped-markdown">
+<p>And here are the solution values:</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ingredient</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> units of </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">I</span><span class="p">[</span><span class="n">ingredient</span><span class="p">]</span><span class="o">.</span><span class="n">solution_value</span><span class="p">(),</span> <span class="n">ingredient</span>
+    <span class="p">))</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+0.0 units of A
+0.0 units of B
+1.1600835737737498 units of C
+3.5668092727091842 units of D
+2.1341160083573794 units of E
+
+</pre></div><div class="wrapped-markdown">
+<p>Note how adding the constraint that the amounts of each ingredient must be integer results in a higher (worse) objective value. In general, adding constraints to a problem will result in an equal or worse result than the previously obtained one.</p>
+</div></div>
 
 </div>
 <footer><a href="https://github.com/oriepython/orpy/blob/main/concepts/ilp/juice.html">Edit this page on GitHub</a></footer>

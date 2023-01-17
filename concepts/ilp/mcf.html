@@ -53,261 +53,261 @@
 
 <!-- Converted IPYNB file -->
 <div class="wrapped-ipynb" id="gurobipy"><div class="wrapped-markdown">
-    <h1>Min Cost Flow ILP (GurobiPy)</h1>
-    <h3>Author: <a href="https://benrosenberg.info">Ben Rosenberg</a></h3>
-    </div><div class="wrapped-markdown">
-    <h3>Imports</h3>
-    <p>We begin by importing some relevant libraries. <code>GurobiPy</code> we import to formulate and solve the ILP; <code>time</code>, we import to time the entire process of supplying the constraints solving the ILP.</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">gurobipy</span> <span class="k">as</span> <span class="nn">gp</span>
-    <span class="kn">from</span> <span class="nn">gurobipy</span> <span class="kn">import</span> <span class="n">GRB</span>
-    <span class="kn">import</span> <span class="nn">time</span>
-    </pre></div>
+<h2>Min Cost Flow ILP (GurobiPy)</h2>
+<h3>Author: <a href="https://benrosenberg.info">Ben Rosenberg</a></h3>
+</div><div class="wrapped-markdown">
+<h3>Imports</h3>
+<p>We begin by importing some relevant libraries. <code>GurobiPy</code> we import to formulate and solve the ILP; <code>time</code>, we import to time the entire process of supplying the constraints solving the ILP.</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">gurobipy</span> <span class="k">as</span> <span class="nn">gp</span>
+<span class="kn">from</span> <span class="nn">gurobipy</span> <span class="kn">import</span> <span class="n">GRB</span>
+<span class="kn">import</span> <span class="nn">time</span>
+</pre></div>
+
+</div><div class="wrapped-markdown">
+<h3>Input data</h3>
+<p>Next, we define our input data. Recall that in the Min Cost Flow problem we have as an input a graph <span class="math inline">G = (N, E)</span>, where <span class="math inline">N</span> is the set of nodes, each of which has supply <span class="math inline">s(i)</span> for all <span class="math inline">i\in N</span>, and <span class="math inline">E</span> is the set of edges, each of which has a cost <span class="math inline">c(i,j)</span> and capacity <span class="math inline">u(i,j)</span> for all <span class="math inline">(i,j)\in E</span></p>
+<p>The input data below corresponds to a small example graph, seen below, in which the numbers inside the nodes are their supply/demand values, and the first element of the tuple corresponding to each edge denotes the cost and the second denotes the capacity:</p>
+<p><img alt="" src="mcf_graph.png" /></p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="n">nodes</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="n">edges</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)]</span>
+
+<span class="c1"># cost[i,j] is the cost of sending one unit of flow along edge (i,j)</span>
+<span class="n">cost</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">8</span>
+<span class="p">}</span> 
+
+<span class="c1"># capacity[i,j] is the capacity of edge (i,j)</span>
+<span class="n">capacity</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span>
+<span class="p">}</span>
+
+<span class="c1"># supply[i] is the supply (if positive) or demand (if negative) of node i</span>
+<span class="n">supply</span> <span class="o">=</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+</pre></div>
+
+</div><div class="wrapped-markdown">
+<h3>Model Definition</h3>
+<p>Now we define our model. The Min Cost Flow problem has the following constraints, using the variable <span class="math inline">f(i,j)</span> to denote the amount of flow on edge <span class="math inline">(i,j)</span>:</p>
+<ul>
+<li>Flow in is equal to flow out, adjusting for the offset of supply
+    <span class="math display">\sum_{(i,j)\in E} f(i,j) - \sum_{(j,i)\in E} f(j,i) = s(i) \quad \forall i\in N</span></li>
+<li>Flow on an edge can be no more than the capacity of that edge
+    <span class="math display">f(i,j) \leq u(i,j) \quad \forall (i,j)\in E</span></li>
+<li>Flow on an edge can be no less than 0 units 
+    <span class="math display">f(i,j) \geq 0 \quad \forall (i,j) \in E</span></li>
+</ul>
+<p>And the objective should be intuitive, as it's simply minimizing the cost of all flows on the edges:</p>
+<p><span class="math display">\min \sum_{(i,j)\in E} c(i,j) \cdot f(i,j)</span></p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">Model</span><span class="p">()</span>
+
+<span class="c1"># set output level to max</span>
+<span class="n">model</span><span class="o">.</span><span class="n">Params</span><span class="o">.</span><span class="n">TuneOutput</span> <span class="o">=</span> <span class="mi">3</span>
+
+<span class="c1"># add variable f</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">addVars</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">GRB</span><span class="o">.</span><span class="n">CONTINUOUS</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;f&#39;</span><span class="p">)</span>
+
+<span class="c1"># add constraint representing supply/demand</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span> <span class="o">-</span>
+                    <span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>
+                    <span class="o">==</span> <span class="n">supply</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+<span class="c1"># add constraint on edge flows w.r.t. capacities</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">capacity</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+
+<span class="c1"># add constraint on edge flows w.r.t. 0</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
     
-    </div><div class="wrapped-markdown">
-    <h3>Input data</h3>
-    <p>Next, we define our input data. Recall that in the Min Cost Flow problem we have as an input a graph <span class="math inline">G = (N, E)</span>, where <span class="math inline">N</span> is the set of nodes, each of which has supply <span class="math inline">s(i)</span> for all <span class="math inline">i\in N</span>, and <span class="math inline">E</span> is the set of edges, each of which has a cost <span class="math inline">c(i,j)</span> and capacity <span class="math inline">u(i,j)</span> for all <span class="math inline">(i,j)\in E</span></p>
-    <p>The input data below corresponds to a small example graph, seen below, in which the numbers inside the nodes are their supply/demand values, and the first element of the tuple corresponding to each edge denotes the cost and the second denotes the capacity:</p>
-    <p><img alt="" src="mcf_graph.png" /></p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="n">nodes</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
-    
-    <span class="n">edges</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)]</span>
-    
-    <span class="c1"># cost[i,j] is the cost of sending one unit of flow along edge (i,j)</span>
-    <span class="n">cost</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-        <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">8</span>
-    <span class="p">}</span> 
-    
-    <span class="c1"># capacity[i,j] is the capacity of edge (i,j)</span>
-    <span class="n">capacity</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-        <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
-        <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span>
-    <span class="p">}</span>
-    
-    <span class="c1"># supply[i] is the supply (if positive) or demand (if negative) of node i</span>
-    <span class="n">supply</span> <span class="o">=</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]</span>
-    </pre></div>
-    
-    </div><div class="wrapped-markdown">
-    <h3>Model Definition</h3>
-    <p>Now we define our model. The Min Cost Flow problem has the following constraints, using the variable <span class="math inline">f(i,j)</span> to denote the amount of flow on edge <span class="math inline">(i,j)</span>:</p>
-    <ul>
-    <li>Flow in is equal to flow out, adjusting for the offset of supply
-     <span class="math display">\sum_{(i,j)\in E} f(i,j) - \sum_{(j,i)\in E} f(j,i) = s(i) \quad \forall i\in N</span></li>
-    <li>Flow on an edge can be no more than the capacity of that edge
-     <span class="math display">f(i,j) \leq u(i,j) \quad \forall (i,j)\in E</span></li>
-    <li>Flow on an edge can be no less than 0 units 
-     <span class="math display">f(i,j) \geq 0 \quad \forall (i,j) \in E</span></li>
-    </ul>
-    <p>And the objective should be intuitive, as it's simply minimizing the cost of all flows on the edges:</p>
-    <p><span class="math display">\min \sum_{(i,j)\in E} c(i,j) \cdot f(i,j)</span></p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    
-    <span class="n">model</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">Model</span><span class="p">()</span>
-    
-    <span class="c1"># set output level to max</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">Params</span><span class="o">.</span><span class="n">TuneOutput</span> <span class="o">=</span> <span class="mi">3</span>
-    
-    <span class="c1"># add variable f</span>
-    <span class="n">f</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">addVars</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">GRB</span><span class="o">.</span><span class="n">CONTINUOUS</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;f&#39;</span><span class="p">)</span>
-    
-    <span class="c1"># add constraint representing supply/demand</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span> <span class="o">-</span>
-                        <span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>
-                       <span class="o">==</span> <span class="n">supply</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-    
-    <span class="c1"># add constraint on edge flows w.r.t. capacities</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">capacity</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
-    
-    <span class="c1"># add constraint on edge flows w.r.t. 0</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">addConstr</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
-        
-    <span class="c1"># set objective</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">setObjective</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">cost</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">),</span> <span class="n">GRB</span><span class="o">.</span><span class="n">MINIMIZE</span><span class="p">)</span>
-    
-    <span class="n">model</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
-    
-    <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    
-    <span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
-    
-    <span class="k">try</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Objective value found: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objVal</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Could not find an objective value. </span><span class="se">\n</span><span class="s1">Traceback:</span><span class="se">\n\t</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    Set parameter Username
-    Academic license - for non-commercial use only - expires 2023-10-13
-    Set parameter TuneOutput to value 3
-    Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
-    Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
-    Optimize a model with 12 rows, 16 columns and 16 nonzeros
-    Model fingerprint: 0xaf2c58bd
-    Coefficient statistics:
-      Matrix range     [1e+00, 1e+00]
-      Objective range  [2e+00, 8e+00]
-      Bounds range     [0e+00, 0e+00]
-      RHS range        [2e+00, 6e+00]
-    Presolve removed 12 rows and 16 columns
-    Presolve time: 0.00s
-    Presolve: All rows and columns removed
-    Iteration    Objective       Primal Inf.    Dual Inf.      Time
-           0    1.4000000e+01   0.000000e+00   0.000000e+00      0s
-    
-    Solved in 0 iterations and 0.01 seconds (0.00 work units)
-    Optimal objective  1.400000000e+01
-    
-    [Total time used: 0 minutes, 0 seconds]
-    
-    Objective value found: 14.0
-    
-    </pre></div><div class="wrapped-markdown">
-    <p>So we have our optimal objective. The optimal solution associated with that, in terms of flows on edges, is given below:</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="c1"># optimal solution</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;f[</span><span class="si">{}</span><span class="s1">,</span><span class="si">{}</span><span class="s1">] = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">x</span>
-        <span class="p">))</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    f[0,1] = 3.0
-    f[0,3] = 2.0
-    f[2,1] = 3.0
-    f[2,3] = 0.0
-    
-    </pre></div></div>
+<span class="c1"># set objective</span>
+<span class="n">model</span><span class="o">.</span><span class="n">setObjective</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">cost</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">),</span> <span class="n">GRB</span><span class="o">.</span><span class="n">MINIMIZE</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Objective value found: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objVal</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Could not find an objective value. </span><span class="se">\n</span><span class="s1">Traceback:</span><span class="se">\n\t</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+Set parameter Username
+Academic license - for non-commercial use only - expires 2023-10-13
+Set parameter TuneOutput to value 3
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
+Optimize a model with 12 rows, 16 columns and 16 nonzeros
+Model fingerprint: 0xaf2c58bd
+Coefficient statistics:
+    Matrix range     [1e+00, 1e+00]
+    Objective range  [2e+00, 8e+00]
+    Bounds range     [0e+00, 0e+00]
+    RHS range        [2e+00, 6e+00]
+Presolve removed 12 rows and 16 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+        0    1.4000000e+01   0.000000e+00   0.000000e+00      0s
+
+Solved in 0 iterations and 0.01 seconds (0.00 work units)
+Optimal objective  1.400000000e+01
+
+[Total time used: 0 minutes, 0 seconds]
+
+Objective value found: 14.0
+
+</pre></div><div class="wrapped-markdown">
+<p>So we have our optimal objective. The optimal solution associated with that, in terms of flows on edges, is given below:</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="c1"># optimal solution</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;f[</span><span class="si">{}</span><span class="s1">,</span><span class="si">{}</span><span class="s1">] = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">x</span>
+    <span class="p">))</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+f[0,1] = 3.0
+f[0,3] = 2.0
+f[2,1] = 3.0
+f[2,3] = 0.0
+
+</pre></div></div>
 
 <!-- Converted IPYNB file -->
 <div class="wrapped-ipynb" id="ortools"><div class="wrapped-markdown">
-    <h1>Min Cost Flow ILP (OR-Tools)</h1>
-    <h3>Author: <a href="https://benrosenberg.info">Ben Rosenberg</a></h3>
-    </div><div class="wrapped-markdown">
-    <h3>Imports</h3>
-    <p>We begin by importing some relevant libraries. We import <code>ortools</code> to formulate and solve the ILP, and we import <code>time</code> to time the entire process of supplying the constraints solving the ILP.</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ortools.linear_solver</span> <span class="kn">import</span> <span class="n">pywraplp</span> <span class="k">as</span> <span class="n">OR</span>
-    <span class="kn">import</span> <span class="nn">time</span>
-    </pre></div>
+<h2>Min Cost Flow ILP (OR-Tools)</h2>
+<h3>Author: <a href="https://benrosenberg.info">Ben Rosenberg</a></h3>
+</div><div class="wrapped-markdown">
+<h3>Imports</h3>
+<p>We begin by importing some relevant libraries. We import <code>ortools</code> to formulate and solve the ILP, and we import <code>time</code> to time the entire process of supplying the constraints solving the ILP.</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ortools.linear_solver</span> <span class="kn">import</span> <span class="n">pywraplp</span> <span class="k">as</span> <span class="n">OR</span>
+<span class="kn">import</span> <span class="nn">time</span>
+</pre></div>
+
+</div><div class="wrapped-markdown">
+<h3>Input data</h3>
+<p>Next, we define our input data. Recall that in the Min Cost Flow problem we have as an input a graph <span class="math inline">G = (N, E)</span>, where <span class="math inline">N</span> is the set of nodes, each of which has supply <span class="math inline">s(i)</span> for all <span class="math inline">i\in N</span>, and <span class="math inline">E</span> is the set of edges, each of which has a cost <span class="math inline">c(i,j)</span> and capacity <span class="math inline">u(i,j)</span> for all <span class="math inline">(i,j)\in E</span></p>
+<p>The input data below corresponds to a small example graph, seen below, in which the numbers inside the nodes are their supply/demand values, and the first element of the tuple corresponding to each edge denotes the cost and the second denotes the capacity:</p>
+<p><img alt="" src="mcf_graph.png" /></p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="n">nodes</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="n">edges</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)]</span>
+
+<span class="c1"># cost[i,j] is the cost of sending one unit of flow along edge (i,j)</span>
+<span class="n">cost</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">8</span>
+<span class="p">}</span> 
+
+<span class="c1"># capacity[i,j] is the capacity of edge (i,j)</span>
+<span class="n">capacity</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span>
+<span class="p">}</span>
+
+<span class="c1"># supply[i] is the supply (if positive) or demand (if negative) of node i</span>
+<span class="n">supply</span> <span class="o">=</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+</pre></div>
+
+</div><div class="wrapped-markdown">
+<h3>Model Definition</h3>
+<p>Now we define our model. The Min Cost Flow problem has the following constraints, using the variable <span class="math inline">f(i,j)</span> to denote the amount of flow on edge <span class="math inline">(i,j)</span>:</p>
+<ul>
+<li>Flow in is equal to flow out, adjusting for the offset of supply
+    <span class="math display">\sum_{(i,j)\in E} f(i,j) - \sum_{(j,i)\in E} f(j,i) = s(i) \quad \forall i\in N</span></li>
+<li>Flow on an edge can be no more than the capacity of that edge
+    <span class="math display">f(i,j) \leq u(i,j) \quad \forall (i,j)\in E</span></li>
+<li>Flow on an edge can be no less than 0 units 
+    <span class="math display">f(i,j) \geq 0 \quad \forall (i,j) \in E</span></li>
+</ul>
+<p>And the objective should be intuitive, as it's simply minimizing the cost of all flows on the edges:</p>
+<p><span class="math display">\min \sum_{(i,j)\in E} c(i,j) \cdot f(i,j)</span></p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">OR</span><span class="o">.</span><span class="n">Solver</span><span class="p">(</span><span class="s1">&#39;MCF&#39;</span><span class="p">,</span> <span class="n">OR</span><span class="o">.</span><span class="n">Solver</span><span class="o">.</span><span class="n">CBC_MIXED_INTEGER_PROGRAMMING</span><span class="p">)</span>
+
+<span class="c1"># add variable f</span>
+<span class="n">f</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
+    <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">NumVar</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">infinity</span><span class="p">(),</span> <span class="s1">&#39;f[</span><span class="si">{}</span><span class="s1">,</span><span class="si">{}</span><span class="s1">]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">i</span><span class="p">,</span><span class="n">j</span>
+    <span class="p">))</span>
+
+<span class="c1"># add constraint representing supply/demand</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span> <span class="o">-</span> 
+            <span class="nb">sum</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>
+            <span class="o">==</span> <span class="n">supply</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+<span class="c1"># add constraint on edge flows w.r.t. capacities</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">capacity</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+
+<span class="c1"># add constraint on edge flows w.r.t. 0</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
     
-    </div><div class="wrapped-markdown">
-    <h3>Input data</h3>
-    <p>Next, we define our input data. Recall that in the Min Cost Flow problem we have as an input a graph <span class="math inline">G = (N, E)</span>, where <span class="math inline">N</span> is the set of nodes, each of which has supply <span class="math inline">s(i)</span> for all <span class="math inline">i\in N</span>, and <span class="math inline">E</span> is the set of edges, each of which has a cost <span class="math inline">c(i,j)</span> and capacity <span class="math inline">u(i,j)</span> for all <span class="math inline">(i,j)\in E</span></p>
-    <p>The input data below corresponds to a small example graph, seen below, in which the numbers inside the nodes are their supply/demand values, and the first element of the tuple corresponding to each edge denotes the cost and the second denotes the capacity:</p>
-    <p><img alt="" src="mcf_graph.png" /></p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="n">nodes</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
-    
-    <span class="n">edges</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)]</span>
-    
-    <span class="c1"># cost[i,j] is the cost of sending one unit of flow along edge (i,j)</span>
-    <span class="n">cost</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-        <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">8</span>
-    <span class="p">}</span> 
-    
-    <span class="c1"># capacity[i,j] is the capacity of edge (i,j)</span>
-    <span class="n">capacity</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-        <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
-        <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span>
-    <span class="p">}</span>
-    
-    <span class="c1"># supply[i] is the supply (if positive) or demand (if negative) of node i</span>
-    <span class="n">supply</span> <span class="o">=</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]</span>
-    </pre></div>
-    
-    </div><div class="wrapped-markdown">
-    <h3>Model Definition</h3>
-    <p>Now we define our model. The Min Cost Flow problem has the following constraints, using the variable <span class="math inline">f(i,j)</span> to denote the amount of flow on edge <span class="math inline">(i,j)</span>:</p>
-    <ul>
-    <li>Flow in is equal to flow out, adjusting for the offset of supply
-     <span class="math display">\sum_{(i,j)\in E} f(i,j) - \sum_{(j,i)\in E} f(j,i) = s(i) \quad \forall i\in N</span></li>
-    <li>Flow on an edge can be no more than the capacity of that edge
-     <span class="math display">f(i,j) \leq u(i,j) \quad \forall (i,j)\in E</span></li>
-    <li>Flow on an edge can be no less than 0 units 
-     <span class="math display">f(i,j) \geq 0 \quad \forall (i,j) \in E</span></li>
-    </ul>
-    <p>And the objective should be intuitive, as it's simply minimizing the cost of all flows on the edges:</p>
-    <p><span class="math display">\min \sum_{(i,j)\in E} c(i,j) \cdot f(i,j)</span></p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    
-    <span class="n">m</span> <span class="o">=</span> <span class="n">OR</span><span class="o">.</span><span class="n">Solver</span><span class="p">(</span><span class="s1">&#39;MCF&#39;</span><span class="p">,</span> <span class="n">OR</span><span class="o">.</span><span class="n">Solver</span><span class="o">.</span><span class="n">CBC_MIXED_INTEGER_PROGRAMMING</span><span class="p">)</span>
-    
-    <span class="c1"># add variable f</span>
-    <span class="n">f</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
-        <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">NumVar</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">infinity</span><span class="p">(),</span> <span class="s1">&#39;f[</span><span class="si">{}</span><span class="s1">,</span><span class="si">{}</span><span class="s1">]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">i</span><span class="p">,</span><span class="n">j</span>
-        <span class="p">))</span>
-    
-    <span class="c1"># add constraint representing supply/demand</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
-        <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span> <span class="o">-</span> 
-              <span class="nb">sum</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>
-              <span class="o">==</span> <span class="n">supply</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-    
-    <span class="c1"># add constraint on edge flows w.r.t. capacities</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
-        <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">capacity</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
-    
-    <span class="c1"># add constraint on edge flows w.r.t. 0</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
-        <span class="n">m</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
-        
-    <span class="c1"># set objective</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Minimize</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">cost</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">))</span>
-    
-    <span class="n">m</span><span class="o">.</span><span class="n">Solve</span><span class="p">()</span>
-    
-    <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    
-    <span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
-    
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Objective:&#39;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">Objective</span><span class="p">()</span><span class="o">.</span><span class="n">Value</span><span class="p">())</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    
-    [Total time used: 0 minutes, 0 seconds]
-    Objective: 14.0
-    
-    </pre></div><div class="wrapped-markdown">
-    <p>So we have our optimal objective. The optimal solution associated with that, in terms of flows on edges, is given below:</p>
-    </div><div class="wrapped-code">
-    <div class="highlight"><pre><span></span><span class="c1"># optimal solution</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;f[</span><span class="si">{}</span><span class="s1">,</span><span class="si">{}</span><span class="s1">] = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">solution_value</span><span class="p">()</span>
-        <span class="p">))</span>
-    </pre></div>
-    
-    </div><div class="wrapped-output"><pre>
-    f[0,1] = 3.0
-    f[0,3] = 2.0
-    f[2,1] = 3.0
-    f[2,3] = 0.0
-    
-    </pre></div></div>
+<span class="c1"># set objective</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Minimize</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">cost</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">))</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">Solve</span><span class="p">()</span>
+
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">diff</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[Total time used: </span><span class="si">{}</span><span class="s1"> minutes, </span><span class="si">{}</span><span class="s1"> seconds]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">tm_min</span><span class="p">,</span> <span class="n">diff</span><span class="o">.</span><span class="n">tm_sec</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Objective:&#39;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">Objective</span><span class="p">()</span><span class="o">.</span><span class="n">Value</span><span class="p">())</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+
+[Total time used: 0 minutes, 0 seconds]
+Objective: 14.0
+
+</pre></div><div class="wrapped-markdown">
+<p>So we have our optimal objective. The optimal solution associated with that, in terms of flows on edges, is given below:</p>
+</div><div class="wrapped-code">
+<div class="highlight"><pre><span></span><span class="c1"># optimal solution</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;f[</span><span class="si">{}</span><span class="s1">,</span><span class="si">{}</span><span class="s1">] = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">solution_value</span><span class="p">()</span>
+    <span class="p">))</span>
+</pre></div>
+
+</div><div class="wrapped-output"><pre>
+f[0,1] = 3.0
+f[0,3] = 2.0
+f[2,1] = 3.0
+f[2,3] = 0.0
+
+</pre></div></div>
 
 </div>
 <footer><a href="https://github.com/oriepython/orpy/blob/main/concepts/ilp/mcf.html">Edit this page on GitHub</a></footer>
