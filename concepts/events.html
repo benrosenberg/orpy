@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ORIE Python Wiki</title>
+  <link rel="stylesheet" href="https://orpy.wiki/style.css" />
+  <link rel="icon" type="image/png" href="https://orpy.wiki/favicon.png">
+  <style></style>
+</head>
+
+<!-- Side navigation -->
+<div class="sidenav">
+    <h1 class="logo"><span class="logo">OR<br><span class="py">PY</span></h1>
+    <a href="https://orpy.wiki/index.html">Home</a>
+    <a href="https://orpy.wiki/about">About</a>
+    <hr>
+    <a href="https://orpy.wiki/courses/index.html">Courses</a>
+    <a href="https://orpy.wiki/concepts/index.html">Concepts</a>
+    <a href="https://orpy.wiki/tools/index.html">Tools</a>
+    <hr>
+    <a href="https://github.com/oriepython/orpy">GitHub</a>
+</div>
+
+<!-- Page content -->
+<div class="main">
+<div class="content">
+<h1>Advice on Simulating Events</h1>
+    
+<h2>Sketch out your ideas beforehand</h2>
+
+<p>
+  Whether that's actually sketching out your ideas on pen and paper or writing documentation for the functions you know you'll be writing, it's always best to go into a complex project with your ideas already set down concretely. In the case of a complex event simulation, this is even more relevant due to the inherent complexity of events which depend on previous results and aren't generated as needed independently.
+</p>
+
+<h2>Split your code into small parts</h2>
+
+<p>
+  The last thing you (or anyone else on your team) wants to debug is a large monolith of code. It may be marginally faster when getting started to just throw everything into one large function or class, but this will soon become unmanageable and indecipherable. 
+</p>
+
+<b>Example:</b> How not to structure your event handling
+
+<pre><code>
+if (first-condition) {
+  do thing 1;
+  do thing 2;
+  ...
+  do thing n;
+} else if (second-condition) {
+  do thing 1;
+  do thing 2;
+  ...
+  do thing n;
+} else {
+  do thing 1;
+  do thing 2;
+  ...
+  do thing n;
+}
+</code></pre>
+
+<p>
+  If you can, try to split the processing of each type of event into its own function, like so:
+</p>
+
+<b>Example:</b> How <i>to</i> structure your event handling
+
+<pre><code>
+if (first-condition) {
+  updated-state = process-first-event(context);
+} else if (second-condition) {
+  updated-state = process-second-event(context);
+} else {
+  updated-state = process-last-event(context);
+}
+</code></pre>
+
+<h2>Use functions functionally</h2>
+
+<p>
+  As you may have seen in the previous example, each event processing function had an argument <code>context</code> which was passed to it, and each function returned a value that became <code>updated-state</code>. This is a <i>functional</i> style of programming, which limits the amount of <a href="https://en.wikipedia.org/wiki/Side_effect_(computer_science)">side effects</a> that occur each time you call a function. This style of working with events will limit the amount of time you spend trying to figure out exactly when and where the global state of your event simulation was modified, and will save you a lot of time in the long run. (Also, it's cleaner.)
+</p>
+
+<h2>Use objects when necessary</h2>
+
+<p>
+  Although object-oriented programming isn't the best option in many situations, it can occasionally be useful in event simulation. The best place to use it is when you would find it convenient to have methods associated with your objects. For example, if you are working with <code>Cellphone</code>s, which have an attribute <code>uptime</code> and have the ability to <code>restart</code> (which resets the uptime to <code>0</code>), it may be beneficial to have the following class structure:
+</p>
+
+<pre><code>
+class Cellphone {
+  ...
+  function restart (self) {
+    self.uptime = 0;
+  }
+}
+</code></pre>
+
+<p>
+  But say you are working with various <code>ingredient</code>s, each of which has a different set of nutritional value attributes. It's unlikely that ingredients will be updating their attributes on their own, so it may be better to use a dictionary or a tuple (or a <a href="https://docs.python.org/3/library/dataclasses.html">dataclass</a>) instead. You can use a function instead of a class initializer, which returns that datatype:
+</p>
+
+<pre><code>
+function create-ingredient (nutrient-1, nutrient-2, nutrient-3) {
+  return {
+    "nutrient-1" : nutrient-1,
+    "nutrient-2" : nutrient-2,
+    "nutrient-3" : nutrient-3
+  }
+}
+</code></pre>
+
+<p>
+  There's no reason to make your code all convoluted by defining classes all over the place. But make sure you stay consistent and <i>document your code</i> so that others who are working with the non-object items can know how to access their attributes.
+</p>
+
+</div>
+<footer><a href="https://github.com/oriepython/orpy/blob/main/concepts/events.html">Edit this page on GitHub</a></footer>
+</div>
