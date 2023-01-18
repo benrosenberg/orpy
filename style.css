@@ -270,10 +270,10 @@ footer {
     background: #d4d4d4;
   }
   
-  img {
+  img:not(.no-invert) {
      -webkit-filter: invert(1);
      filter: invert(1);
-     }
+  }
   
   a:link:not(.sidenav a) {
     color: #8ec07c;
