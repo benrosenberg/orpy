@@ -275,19 +275,19 @@ footer {
      filter: invert(1);
      }
   
-  a:link {
+  a:link:not(.sidenav a) {
     color: #8ec07c;
   }
   
-  a:visited {
+  a:visited:not(.sidenav a) {
     color: #d3869b;
   }
   
-  a:hover {
+  a:hover:not(.sidenav a) {
     color: #fe8019;
   }
   
-  a:active {
+  a:active:not(.sidenav a) {
     color: #83a598;
   }
   
